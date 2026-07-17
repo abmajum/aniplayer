@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Search Results{% endblock %}
+{% block content %}
+    <h1>Search Results for "{{ query }}"</h1>
+    
+    {% if courses %}
+    <h2>Courses</h2>
+    <div class="grid">
+        {% for course in courses %}
+        <a href="/course/{{ course.id }}" class="card">
+            <div class="card-img" style="background: {% if course.cover_url %}url('{{ course.cover_url }}') center/cover no-repeat{% else %}linear-gradient(135deg, #333 0%, #555 100%){% endif %}"></div>
+            <div class="card-body"><h3>{{ course.name }}</h3></div>
+        </a>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    {% if videos %}
+    <h2>Videos</h2>
+    <div class="video-list">
+        {% for vid in videos %}
+        <a href="/video/{{ vid.id }}" class="video-item">
+            <div class="video-icon">▶</div>
+            <div class="video-details">
+                <h3>{{ vid.name }}</h3>
+                <p class="text-muted">{{ vid.course_name }}</p>
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    {% if not courses and not videos %}
+    <p class="text-muted" style="text-align: center; margin-top: 2rem;">No results found.</p>
+    {% endif %}
+{% endblock %}

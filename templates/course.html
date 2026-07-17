@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}{{ course.name }}{% endblock %}
+{% block content %}
+    <div class="course-header">
+        <div class="course-cover" style="background: {% if course.cover_url %}url('{{ course.cover_url }}') center/cover no-repeat{% else %}linear-gradient(135deg, #667eea 0%, #764ba2 100%){% endif %}"></div>
+        <div class="course-info">
+            <h1>{{ course.name }}</h1>
+            <p>{{ total_videos }} Video Lessons</p>
+            <div class="course-progress">
+                <div class="progress-info">
+                    <span>{{ completion_percentage }}% Complete</span>
+                    <span>{{ completed_videos }}/{{ total_videos }} videos</span>
+                </div>
+                <div class="progress-track">
+                    <div class="progress-fill" style="width: {{ completion_percentage }}%"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="course-content">
+        <h2>Course Content</h2>
+        <div class="course-tree">
+            {% macro render_items(items, level=0) %}
+                {% for item in items %}
+                    <div class="tree-item" style="margin-left: {{ level * 20 }}px">
+                        {% if item.item_type == 'folder' %}
+                            <div class="tree-folder">
+                                <span class="folder-icon">📁</span>
+                                <span class="folder-name">{{ item.name }}</span>
+                            </div>
+                            {% if item.children %}
+                                <div class="tree-children">
+                                    {{ render_items(item.children, level + 1) }}
+                                </div>
+                            {% endif %}
+                        {% elif item.item_type == 'video' %}
+                            <a href="/video/{{ item.id }}" class="tree-file video {% if item.is_completed %}completed{% endif %}">
+                                <span class="file-icon {% if item.is_completed %}check{% endif %}">
+                                    {% if item.is_completed %}✓{% else %}▶{% endif %}
+                                </span>
+                                <span class="file-name">{{ item.name }}</span>
+                                <span class="file-type">Video</span>
+                            </a>
+                        {% elif item.item_type == 'pdf' %}
+                            <a href="/file/{{ item.id }}" class="tree-file pdf" target="_blank">
+                                <span class="file-icon pdf-icon">📄</span>
+                                <span class="file-name">{{ item.name }}</span>
+                                <span class="file-type">PDF</span>
+                            </a>
+                        {% elif item.item_type == 'text' %}
+                            <a href="/file/{{ item.id }}" class="tree-file text" target="_blank">
+                                <span class="file-icon text-icon">📝</span>
+                                <span class="file-name">{{ item.name }}</span>
+                                <span class="file-type">Text</span>
+                            </a>
+                        {% else %}
+                            <a href="/file/{{ item.id }}" class="tree-file" target="_blank">
+                                <span class="file-icon">📎</span>
+                                <span class="file-name">{{ item.name }}</span>
+                                <span class="file-type">File</span>
+                            </a>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+            {% endmacro %}
+            
+            {{ render_items(items) }}
+        </div>
+    </div>
+{% endblock %}

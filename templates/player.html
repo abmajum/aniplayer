@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+{% block title %}{{ lesson.title }} - LMS{% endblock %}
+{% block content %}
+<div class="player-layout">
+    <div class="player-main">
+        <a href="/course/{{ lesson.course_name }}" class="back-link">← Back to course</a>
+        <h1>{{ lesson.title }}</h1>
+
+        {% if lesson.type == 'video' %}
+        <video id="video-player" controls>
+            <source src="/stream/{{ lesson.relative_path }}" type="{{ {
+                '.mp4': 'video/mp4', '.webm': 'video/webm', '.ogg': 'video/ogg',
+                '.mkv': 'video/x-matroska', '.mov': 'video/quicktime',
+                '.avi': 'video/x-msvideo', '.m4v': 'video/x-m4v'
+            }.get('.' + lesson.filename.rsplit('.', 1)[-1].lower(), 'video/mp4') }}">
+            Your browser does not support video playback for this format.
+        </video>
+        {% else %}
+        <iframe id="pdf-viewer" src="/stream/{{ lesson.relative_path }}" style="width:100%;height:80vh;border:none;"></iframe>
+        {% endif %}
+
+        <div class="player-controls">
+            {% if lesson.type == 'pdf' %}
+            <button onclick="markComplete({{ lesson.id }})" class="btn-complete" id="complete-btn">
+                {{ '✅ Completed' if progress and progress.completed else 'Mark as Complete' }}
+            </button>
+            {% endif %}
+            {% if next_lesson %}
+            <a href="/watch/{{ next_lesson.id }}" class="btn-next">Next →</a>
+            {% endif %}
+        </div>
+    </div>
+
+    <aside class="sidebar">
+        <h3>Lessons</h3>
+        {% for s in siblings %}
+        <a href="/watch/{{ s.id }}" class="sidebar-item {{ 'active' if s.id == lesson.id }} {{ 'completed' if s.completed }}">
+            <span>{{ '🎬' if s.type == 'video' else '📄' }}</span>
+            <span class="sidebar-title">{{ s.title }}</span>
+            {% if s.completed %}<span class="check">✅</span>{% endif %}
+        </a>
+        {% endfor %}
+    </aside>
+</div>
+
+<script>
+    const LESSON_ID = {{ lesson.id }};
+    const LESSON_TYPE = "{{ lesson.type }}";
+    const RESUME_POSITION = {{ progress.position if progress and progress.position else 0 }};
+    const NEXT_LESSON_URL = "{{ url_for('watch', lesson_id=next_lesson.id) if next_lesson else '' }}";
+</script>
+<script src="{{ url_for('static', filename='player.js') }}"></script>
+{% endblock %}

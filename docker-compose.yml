@@ -1,0 +1,15 @@
+version: '3.8'
+
+services:
+  lms:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      # Map your downloaded torrent courses folder here
+      - /Users/ABMAJUM/courses:/app/courses 
+      # Map database storage
+      - /Users/ABMAJUM/data:/app/data 
+    environment:
+      - COURSES_DIR=/app/courses
+      - DATA_DIR=/app/data

@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% block title %}{{ video.name }}{% endblock %}
+{% block content %}
+    <div class="video-page-container">
+        <!-- Left side: Video and Controls -->
+        <div class="video-main">
+            <div class="video-wrapper">
+                <div class="video-header">
+                    <div>
+                        <h1>{{ video.name }}</h1>
+                        <p class="text-muted">Course: <a href="/course/{{ video.course_id }}">{{ video.course_name }}</a></p>
+                    </div>
+                    <button id="expandBtn" class="expand-toggle" title="Expand/Collapse Video">⛶</button>
+                </div>
+
+                <div id="videoContainer" class="video-container">
+                    <video id="player" controls autoplay>
+                        <source src="/stream/{{ video.id }}" type="video/mp4">
+                        Your browser does not support the video tag.
+                    </video>
+                </div>
+
+                <div class="video-controls-bottom">
+                    <div class="nav-buttons">
+                        {% if prev_video %}
+                        <a href="/video/{{ prev_video }}" class="btn btn-secondary">← Previous</a>
+                        {% endif %}
+                        {% if next_video %}
+                        <a href="/video/{{ next_video }}" class="btn btn-primary">Next →</a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right side: Course Content Sidebar -->
+        <div class="course-sidebar">
+            <div class="sidebar-header">
+                <h3>Course Content</h3>
+            </div>
+            <div class="course-tree-sidebar">
+                {% macro render_items(items, current_id) %}
+                    {% for item in items %}
+                        {% if item.item_type == 'folder' %}
+                            <div class="tree-folder-sidebar">
+                                <div class="folder-toggle">📁 {{ item.name }}</div>
+                                <div class="tree-children-sidebar">
+                                    {{ render_items(item.children, current_id) }}
+                                </div>
+                            </div>
+                        {% elif item.item_type == 'video' %}
+                            <a href="/video/{{ item.id }}" class="tree-file-sidebar video-link {% if item.id == current_id %}active{% endif %}{% if item.is_completed %} completed{% endif %}">
+                                <span class="file-icon-sidebar video-icon">▶</span>
+                                <span class="file-name-sidebar">{{ item.name }}</span>
+                                {% if item.is_completed %}<span class="completed-badge">✓</span>{% endif %}
+                            </a>
+                        {% elif item.item_type == 'pdf' %}
+                            <a href="/file/{{ item.id }}" class="tree-file-sidebar pdf-link" target="_blank">
+                                <span class="file-icon-sidebar pdf-icon">📄</span>
+                                <span class="file-name-sidebar">{{ item.name }}</span>
+                            </a>
+                        {% elif item.item_type == 'text' %}
+                            <a href="/file/{{ item.id }}" class="tree-file-sidebar text-link" target="_blank">
+                                <span class="file-icon-sidebar text-icon">📝</span>
+                                <span class="file-name-sidebar">{{ item.name }}</span>
+                            </a>
+                        {% else %}
+                            <a href="/file/{{ item.id }}" class="tree-file-sidebar file-link" target="_blank">
+                                <span class="file-icon-sidebar">📎</span>
+                                <span class="file-name-sidebar">{{ item.name }}</span>
+                            </a>
+                        {% endif %}
+                    {% endfor %}
+                {% endmacro %}
+                
+                {{ render_items(course_items, video.id) }}
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const videoId = {{ video.id }};
+        const startSeconds = {{ video.watched_seconds }};
+        const expandBtn = document.getElementById('expandBtn');
+        const videoContainer = document.getElementById('videoContainer');
+        
+        expandBtn.addEventListener('click', function() {
+            videoContainer.classList.toggle('expanded');
+            expandBtn.classList.toggle('active');
+        });
+
+        // Expand/collapse folders in sidebar
+        document.querySelectorAll('.folder-toggle').forEach(toggle => {
+            toggle.addEventListener('click', function() {
+                const children = this.nextElementSibling;
+                this.parentElement.classList.toggle('collapsed');
+            });
+        });
+    </script>
+{% endblock %}
