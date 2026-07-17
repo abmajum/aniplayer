@@ -53,9 +53,9 @@ interface AppDao {
     @Query("SELECT * FROM progress")
     fun getAllProgress(): Flow<List<Progress>>
     
-    @Query("SELECT ci.*, COALESCE(p.watched_seconds, 0) as watchedSeconds, COALESCE(p.duration, 0) as duration, COALESCE(p.is_completed, 0) as isCompleted FROM course_items ci LEFT JOIN progress p ON ci.id = p.itemId WHERE ci.courseId = :courseId AND ci.itemType = 'video'")
+    @Query("SELECT ci.*, COALESCE(p.watchedSeconds, 0) as watchedSeconds, COALESCE(p.duration, 0) as duration, COALESCE(p.isCompleted, 0) as isCompleted FROM course_items ci LEFT JOIN progress p ON ci.id = p.itemId WHERE ci.courseId = :courseId AND ci.itemType = 'video'")
     fun getVideosWithProgress(courseId: Int): Flow<List<CourseItem>>
     
-    @Query("SELECT ci.*, c.name as courseName, COALESCE(p.watched_seconds, 0) as watchedSeconds, COALESCE(p.duration, 0) as duration, COALESCE(p.is_completed, 0) as isCompleted FROM course_items ci JOIN courses c ON ci.courseId = c.id LEFT JOIN progress p ON ci.id = p.itemId WHERE ci.itemType = 'video' AND p.watched_seconds > 0 AND p.is_completed = 0 ORDER BY p.watched_seconds DESC LIMIT 6")
+    @Query("SELECT ci.*, c.name as courseName, COALESCE(p.watchedSeconds, 0) as watchedSeconds, COALESCE(p.duration, 0) as duration, COALESCE(p.isCompleted, 0) as isCompleted FROM course_items ci JOIN courses c ON ci.courseId = c.id LEFT JOIN progress p ON ci.id = p.itemId WHERE ci.itemType = 'video' AND p.watchedSeconds > 0 AND p.isCompleted = 0 ORDER BY p.watchedSeconds DESC LIMIT 6")
     fun getContinueWatching(): Flow<List<CourseItem>>
 }
