@@ -17,6 +17,7 @@ import androidx.compose.ui.unit.dp
 import com.videolms.android.data.model.Course
 import com.videolms.android.data.model.CourseItem
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     courses: List<Course>,
@@ -128,6 +129,7 @@ fun HomeScreen(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun CourseCard(
     course: Course,
@@ -209,6 +211,7 @@ private fun CourseCard(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ContinueWatchingCard(
     item: CourseItem,
@@ -246,7 +249,7 @@ private fun ContinueWatchingCard(
             Spacer(modifier = Modifier.height(8.dp))
             
             Text(
-                text = item.courseName ?: "",
+                text = item.name,
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )

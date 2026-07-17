@@ -1,48 +1,31 @@
 ```
-# Android build artifacts
-*.apk
-*.aar
-*.jar
+# Compiled and build artifacts
+*.class
+*.dex
 *.so
+*.aar
+*.apk
+*.jar
 
-# Android build directories
+# Dependencies
+.gradle/
 build/
 app/build/
-.intermediates/
-.externalNativeBuild/
 
-# Gradle
-.gradle/
-gradle-app-setting.json
-
-# Local configuration file (sdk path, etc)
-local.properties
-
-# Log Files
+# Logs and temp files
 *.log
+*.tmp
 
-# Android Studio
+# Environment
+.env
+.env.local
+.env.
+
+# Editors
+.vscode/
 .idea/
-*.iml
-*.iws
-out/
 
-# Keystore properties
-keystore.properties
-
-# Generated files
-gen/
-generated/
-
-# Debug/profiling traces
-*.trace
-
-# Coverage reports
-coverage/
-
-# APK Analyzer
-.apk/
-
-# Unit test results
-test-results/
+# OS generated files
+.DS_Store
+Thumbs.db
 ```

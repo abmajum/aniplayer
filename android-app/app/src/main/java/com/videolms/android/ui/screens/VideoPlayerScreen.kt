@@ -5,8 +5,6 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -18,12 +16,12 @@ import androidx.media3.ui.PlayerView
 import com.videolms.android.data.model.CourseItem
 import java.io.File
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun VideoPlayerScreen(
     videoItem: CourseItem,
     serverBaseUrl: String?,
     onProgressUpdate: (Float, Float) -> Unit,
-    onNavigateBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -89,15 +87,9 @@ fun VideoPlayerScreen(
     Column(modifier = modifier.fillMaxSize()) {
         TopAppBar(
             title = { Text(videoItem.name) },
-            navigationIcon = {
-                IconButton(onClick = onNavigateBack) {
-                    Icon(Icons.Default.ArrowBack, contentDescription = "Back")
-                }
-            },
             colors = TopAppBarDefaults.topAppBarColors(
                 containerColor = MaterialTheme.colorScheme.primary,
-                titleContentColor = MaterialTheme.colorScheme.onPrimary,
-                navigationIconContentColor = MaterialTheme.colorScheme.onPrimary
+                titleContentColor = MaterialTheme.colorScheme.onPrimary
             )
         )
         
