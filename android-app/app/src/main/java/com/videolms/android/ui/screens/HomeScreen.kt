@@ -129,6 +129,7 @@ fun HomeScreen(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun CourseCard(
     course: Course,
@@ -210,6 +211,7 @@ private fun CourseCard(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ContinueWatchingCard(
     item: CourseItem,

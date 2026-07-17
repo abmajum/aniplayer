@@ -181,9 +181,6 @@ fun AppNavHost() {
                         // Save to both local DB and server
                         repository.saveProgressBoth(videoId, watchedSeconds, duration)
                     }
-                },
-                onNavigateBack = {
-                    navController.popBackStack()
                 }
             )
         }
