@@ -14,4 +14,4 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "VideoLMS"
-include ':app'
+include(":app")
