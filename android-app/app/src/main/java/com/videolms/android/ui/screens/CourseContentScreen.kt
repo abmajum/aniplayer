@@ -16,6 +16,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.videolms.android.data.model.CourseItem
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CourseContentScreen(
     courseName: String,

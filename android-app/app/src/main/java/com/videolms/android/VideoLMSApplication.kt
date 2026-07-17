@@ -103,7 +103,7 @@ class VideoLMSApplication : Application() {
         lateinit var instance: VideoLMSApplication
             private set
         
-        val SERVER_URL_KEY = Preferences.Key("server_url")
+        private val SERVER_URL_KEY = stringPreferencesKey("server_url")
         
         fun getServerBaseUrl(context: Context): String {
             // Default fallback

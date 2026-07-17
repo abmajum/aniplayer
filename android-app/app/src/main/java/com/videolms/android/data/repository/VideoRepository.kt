@@ -127,6 +127,7 @@ class VideoRepository(
                     name = file.name,
                     path = file.absolutePath,
                     itemType = "folder",
+                    filename = null,
                     courseId = courseId,
                     parentId = parentId,
                     sortOrder = 0

@@ -12,7 +12,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -79,7 +81,7 @@ class MainActivity : ComponentActivity() {
     
     private fun scanLocalVideos() {
         lifecycleScope.launch {
-            application<VideoLMSApplication>().repository.scanLocalVideoFiles()
+            (application as VideoLMSApplication).repository.scanLocalVideoFiles()
         }
     }
 }
@@ -87,7 +89,7 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun AppNavHost() {
     val navController = rememberNavController()
-    val application = androidx.compose.ui.platform.LocalContext.current.applicationContext as VideoLMSApplication
+    val application = LocalContext.current.applicationContext as VideoLMSApplication
     val repository = application.repository
     
     var courses by remember { mutableStateOf<List<com.videolms.android.data.model.Course>>(emptyList()) }
@@ -151,9 +153,6 @@ fun AppNavHost() {
                 onVideoClick = { video ->
                     selectedVideo = video
                     navController.navigate("video/${video.id}?source=server")
-                },
-                onNavigateBack = {
-                    navController.popBackStack()
                 }
             )
         }
@@ -198,19 +197,12 @@ fun AppNavHost() {
                 onVideoClick = { video ->
                     selectedVideo = video
                     navController.navigate("video/${video.id}?source=local")
-                },
-                onNavigateBack = {
-                    navController.popBackStack()
                 }
             )
         }
         
         composable("settings") {
-            SettingsScreen(
-                onNavigateBack = {
-                    navController.popBackStack()
-                }
-            )
+            SettingsScreen()
         }
     }
 }

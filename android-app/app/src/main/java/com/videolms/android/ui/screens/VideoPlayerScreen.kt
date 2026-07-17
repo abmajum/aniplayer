@@ -18,6 +18,7 @@ import androidx.media3.ui.PlayerView
 import com.videolms.android.data.model.CourseItem
 import java.io.File
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun VideoPlayerScreen(
     videoItem: CourseItem,

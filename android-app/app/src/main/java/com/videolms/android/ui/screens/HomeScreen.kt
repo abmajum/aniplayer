@@ -17,6 +17,7 @@ import androidx.compose.ui.unit.dp
 import com.videolms.android.data.model.Course
 import com.videolms.android.data.model.CourseItem
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     courses: List<Course>,
@@ -246,7 +247,7 @@ private fun ContinueWatchingCard(
             Spacer(modifier = Modifier.height(8.dp))
             
             Text(
-                text = item.courseName ?: "",
+                text = item.name,
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
