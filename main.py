@@ -4,7 +4,7 @@ import mimetypes
 import re
 from pathlib import Path
 from fastapi import FastAPI, Request, HTTPException, Query
-from fastapi.responses import HTMLResponse, FileResponse, StreamingResponse
+from fastapi.responses import HTMLResponse, FileResponse, StreamingResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
@@ -127,12 +127,9 @@ def scan_courses():
                         suffix = item.suffix.lower()
                         if suffix in VIDEO_EXTENSIONS:
                             item_type = "video"
-                        elif suffix == ".pdf":
-                            item_type = "pdf"
-                        elif suffix in {".txt", ".md", ".rst", ".doc", ".docx"}:
-                            item_type = "text"
                         else:
-                            item_type = "file"
+                            # Only index folders and supported video files.
+                            continue
                         
                         cursor.execute(
                             "INSERT INTO course_items (course_id, parent_id, name, path, item_type, filename, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?)",
@@ -390,10 +387,15 @@ async def search(request: Request, q: str = Query("")):
         SELECT ci.*, c.name as course_name, c.id as course_id 
         FROM course_items ci
         JOIN courses c ON ci.course_id = c.id 
-        WHERE (ci.name LIKE ? OR ci.filename LIKE ?) AND ci.item_type IN ('video', 'pdf', 'text')
+        WHERE (ci.name LIKE ? OR ci.filename LIKE ?) AND ci.item_type = 'video'
     """, (query, query)).fetchall()
     conn.close()
     return templates.TemplateResponse("search.html", {"request": request, "query": q, "courses": courses, "videos": videos})
+
+@app.post("/rescan")
+async def rescan_folder():
+    scan_courses()
+    return RedirectResponse(url="/", status_code=303)
 
 @app.post("/api/progress")
 async def update_progress(progress: ProgressUpdate):

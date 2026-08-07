@@ -9,11 +9,16 @@
 <body>
     <nav class="navbar">
         <div class="nav-container">
-            <a href="/" class="logo">🎓 DevopsAcademy</a>
-            <form action="/search" method="get" class="search-form">
-                <input type="text" name="q" placeholder="Search courses and videos..." value="{{ query | default('') }}">
-                <button type="submit"></button>
-            </form>
+            <a href="/" class="logo">▶ Aniplayer</a>
+            <div class="nav-actions">
+                <form action="/search" method="get" class="search-form">
+                    <input type="text" name="q" placeholder="Search courses and videos..." value="{{ query | default('') }}">
+                    <button type="submit" aria-label="Search">🔍</button>
+                </form>
+                <form action="/rescan" method="post" class="rescan-form">
+                    <button type="submit">Rescan</button>
+                </form>
+            </div>
         </div>
     </nav>
     <main class="container">

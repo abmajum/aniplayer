@@ -1,0 +1,16 @@
+# Ignore runtime volume directories and local metadata
+courses/
+data/
+
+# Python artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Git and Docker files not needed in build context
+.git/
+.gitignore
+
+# OS and editor files
+.DS_Store
+*.swp
