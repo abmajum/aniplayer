@@ -92,9 +92,14 @@
         // Expand/collapse folders in sidebar
         document.querySelectorAll('.folder-toggle').forEach(toggle => {
             toggle.addEventListener('click', function() {
-                const children = this.nextElementSibling;
                 this.parentElement.classList.toggle('collapsed');
             });
         });
+
+        // Scroll the currently active lesson into view in the sidebar
+        const activeSidebarItem = document.querySelector('.tree-file-sidebar.active');
+        if (activeSidebarItem) {
+            activeSidebarItem.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+        }
     </script>
 {% endblock %}

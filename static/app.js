@@ -25,6 +25,38 @@ document.addEventListener('DOMContentLoaded', () => {
         saveProgress(player.duration, player.duration);
     });
 
+    document.addEventListener('keydown', (event) => {
+        // Ignore typing in form fields or when modifier keys are held
+        const activeElement = document.activeElement;
+        const isFormField = activeElement && (
+            activeElement.tagName === 'INPUT' ||
+            activeElement.tagName === 'TEXTAREA' ||
+            activeElement.tagName === 'SELECT' ||
+            activeElement.isContentEditable
+        );
+        if (isFormField) return;
+
+        if (event.ctrlKey || event.altKey || event.metaKey) return;
+
+        const seekSeconds = 5;
+        if (event.code === 'Space' || event.code === 'ArrowRight' || event.code === 'ArrowLeft') {
+            // Prevent default actions (scrolling / button activation) and stop other handlers
+            event.preventDefault();
+            if (event.stopImmediatePropagation) event.stopImmediatePropagation();
+
+            if (event.code === 'Space') {
+                if (player.paused) player.play(); else player.pause();
+                return;
+            }
+
+            if (event.code === 'ArrowRight') {
+                player.currentTime = Math.min(player.duration || Infinity, player.currentTime + seekSeconds);
+            } else if (event.code === 'ArrowLeft') {
+                player.currentTime = Math.max(0, player.currentTime - seekSeconds);
+            }
+        }
+    });
+
     function saveProgress(watched, duration) {
         if (!duration || isNaN(duration)) return;
         

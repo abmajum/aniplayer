@@ -332,18 +332,6 @@ async def video_player(request: Request, item_id: int):
     if not video:
         raise HTTPException(status_code=404)
     
-    all_course_videos = conn.execute(
-        "SELECT id, name FROM course_items WHERE course_id = ? AND item_type = 'video'", 
-        (video["course_id"],)
-    ).fetchall()
-    # Sort videos naturally by name
-    sorted_videos = sorted(all_course_videos, key=lambda x: natural_sort_key(x["name"]))
-    video_ids = [v["id"] for v in sorted_videos]
-    current_idx = video_ids.index(item_id)
-    
-    next_video = video_ids[current_idx + 1] if current_idx < len(video_ids) - 1 else None
-    prev_video = video_ids[current_idx - 1] if current_idx > 0 else None
-    
     # Fetch all course items (files and folders)
     def get_items(parent_id=None):
         items = conn.execute("""
@@ -368,6 +356,20 @@ async def video_player(request: Request, item_id: int):
         return result
     
     course_items = get_items()
+
+    def flatten_videos(items):
+        ids = []
+        for item in items:
+            if item["item_type"] == "video":
+                ids.append(item["id"])
+            elif item["item_type"] == "folder":
+                ids.extend(flatten_videos(item["children"]))
+        return ids
+
+    video_ids = flatten_videos(course_items)
+    current_idx = video_ids.index(item_id)
+    next_video = video_ids[current_idx + 1] if current_idx < len(video_ids) - 1 else None
+    prev_video = video_ids[current_idx - 1] if current_idx > 0 else None
     conn.close()
     
     return templates.TemplateResponse("video.html", {
