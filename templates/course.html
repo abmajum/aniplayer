@@ -41,6 +41,9 @@
                                 </span>
                                 <span class="file-name">{{ item.name }}</span>
                                 <span class="file-type">Video</span>
+                                {% if item.is_completed %}
+                                <button type="button" class="reset-completion" data-video-id="{{ item.id }}" title="Reset completion for {{ item.name }}" aria-label="Reset completion for {{ item.name }}">↺</button>
+                                {% endif %}
                             </a>
                         {% elif item.item_type == 'pdf' %}
                             <a href="/file/{{ item.id }}" class="tree-file pdf" target="_blank">

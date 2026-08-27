@@ -1,4 +1,23 @@
 document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.reset-completion').forEach(button => {
+        button.addEventListener('click', async (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            button.disabled = true;
+
+            try {
+                const response = await fetch(`/api/progress/${button.dataset.videoId}/reset`, {
+                    method: 'POST'
+                });
+                if (!response.ok) throw new Error(`Reset failed (${response.status})`);
+                window.location.reload();
+            } catch (error) {
+                button.disabled = false;
+                console.error('Failed to reset completion', error);
+            }
+        });
+    });
+
     const player = document.getElementById('player');
     if (!player) return;
 

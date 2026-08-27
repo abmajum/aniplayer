@@ -53,6 +53,9 @@
                                 <span class="file-icon-sidebar video-icon">▶</span>
                                 <span class="file-name-sidebar">{{ item.name }}</span>
                                 {% if item.is_completed %}<span class="completed-badge">✓</span>{% endif %}
+                                {% if item.is_completed %}
+                                <button type="button" class="reset-completion sidebar-reset" data-video-id="{{ item.id }}" title="Reset completion for {{ item.name }}" aria-label="Reset completion for {{ item.name }}">↺</button>
+                                {% endif %}
                             </a>
                         {% elif item.item_type == 'pdf' %}
                             <a href="/file/{{ item.id }}" class="tree-file-sidebar pdf-link" target="_blank">

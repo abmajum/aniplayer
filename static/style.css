@@ -315,6 +315,26 @@ a:hover {
     text-transform: uppercase;
 }
 
+.reset-completion {
+    width: 30px;
+    height: 30px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 1.1rem;
+    line-height: 1;
+    flex-shrink: 0;
+}
+
+.reset-completion:hover,
+.reset-completion:focus-visible {
+    border-color: var(--accent);
+    color: var(--accent);
+    outline: none;
+}
+
 /* Grid Layout */
 .grid {
     display: grid;
@@ -390,6 +410,33 @@ a:hover {
     color: var(--text-primary);
     padding-bottom: 0.5rem;
     border-bottom: 2px solid var(--border);
+}
+
+.continue-watching summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    list-style: none;
+}
+
+.continue-watching summary::-webkit-details-marker {
+    display: none;
+}
+
+.continue-watching summary h2 {
+    flex: 1;
+}
+
+.section-toggle {
+    color: var(--accent);
+    font-size: 1.5rem;
+    line-height: 1;
+    transition: transform 0.2s ease;
+}
+
+.continue-watching:not([open]) .section-toggle {
+    transform: rotate(-90deg);
 }
 
 /* Continue Watching Card */
@@ -626,6 +673,12 @@ a:hover {
     font-size: 0.8rem;
     color: var(--success);
     flex-shrink: 0;
+}
+
+.sidebar-reset {
+    width: 26px;
+    height: 26px;
+    font-size: 1rem;
 }
 
 /* Responsive */

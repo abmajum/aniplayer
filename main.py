@@ -2,6 +2,7 @@ import os
 import sqlite3
 import mimetypes
 import re
+import time
 from pathlib import Path
 from fastapi import FastAPI, Request, HTTPException, Query
 from fastapi.responses import HTMLResponse, FileResponse, StreamingResponse, RedirectResponse
@@ -62,6 +63,11 @@ def init_db():
             is_completed BOOLEAN DEFAULT 0
         );
     """)
+    progress_columns = {
+        row[1] for row in conn.execute("PRAGMA table_info(progress)").fetchall()
+    }
+    if "last_watched_at" not in progress_columns:
+        conn.execute("ALTER TABLE progress ADD COLUMN last_watched_at REAL DEFAULT 0")
     conn.commit()
     conn.close()
 
@@ -72,7 +78,7 @@ def scan_courses():
     # Save progress keyed by file path before wiping course data
     saved_progress = {}
     rows = cursor.execute("""
-        SELECT ci.path, p.watched_seconds, p.duration, p.is_completed
+        SELECT ci.path, p.watched_seconds, p.duration, p.is_completed, p.last_watched_at
         FROM progress p
         JOIN course_items ci ON p.item_id = ci.id
     """).fetchall()
@@ -81,6 +87,7 @@ def scan_courses():
             "watched_seconds": row["watched_seconds"],
             "duration": row["duration"],
             "is_completed": row["is_completed"],
+            "last_watched_at": row["last_watched_at"],
         }
 
     cursor.execute("DELETE FROM progress")
@@ -147,9 +154,9 @@ def scan_courses():
             prog = saved_progress.get(item["path"])
             if prog:
                 cursor.execute("""
-                    INSERT INTO progress (item_id, watched_seconds, duration, is_completed)
-                    VALUES (?, ?, ?, ?)
-                """, (item["id"], prog["watched_seconds"], prog["duration"], prog["is_completed"]))
+                    INSERT INTO progress (item_id, watched_seconds, duration, is_completed, last_watched_at)
+                    VALUES (?, ?, ?, ?, ?)
+                """, (item["id"], prog["watched_seconds"], prog["duration"], prog["is_completed"], prog["last_watched_at"]))
         conn.commit()
 
     conn.close()
@@ -226,12 +233,22 @@ async def serve_file(item_id: int):
 async def dashboard(request: Request):
     conn = get_db()
     continue_watching = conn.execute("""
-        SELECT ci.id, ci.name, ci.item_type, c.id as course_id, c.name as course_name, c.cover_url, p.watched_seconds, p.duration
-        FROM progress p
-        JOIN course_items ci ON p.item_id = ci.id
-        JOIN courses c ON ci.course_id = c.id
-        WHERE ci.item_type = 'video' AND p.watched_seconds > 0 AND p.is_completed = 0
-        ORDER BY p.watched_seconds DESC LIMIT 6
+        SELECT id, name, item_type, course_id, course_name, cover_url, watched_seconds, duration, last_watched_at
+        FROM (
+            SELECT ci.id, ci.name, ci.item_type, c.id as course_id, c.name as course_name,
+                   c.cover_url, p.watched_seconds, p.duration, p.last_watched_at,
+                   ROW_NUMBER() OVER (
+                       PARTITION BY c.id
+                       ORDER BY COALESCE(NULLIF(p.last_watched_at, 0), p.watched_seconds) DESC,
+                                ci.id DESC
+                   ) as course_rank
+            FROM progress p
+            JOIN course_items ci ON p.item_id = ci.id
+            JOIN courses c ON ci.course_id = c.id
+            WHERE ci.item_type = 'video' AND p.watched_seconds > 0 AND p.is_completed = 0
+        )
+        WHERE course_rank = 1
+        ORDER BY COALESCE(NULLIF(last_watched_at, 0), watched_seconds) DESC
     """).fetchall()
     
     courses = conn.execute("SELECT * FROM courses").fetchall()
@@ -322,7 +339,8 @@ async def video_player(request: Request, item_id: int):
     conn = get_db()
     video = conn.execute("""
         SELECT ci.*, c.name as course_name, c.id as course_id, 
-        COALESCE(p.watched_seconds, 0) as watched_seconds
+        COALESCE(p.watched_seconds, 0) as watched_seconds,
+        COALESCE(p.is_completed, 0) as is_completed
         FROM course_items ci
         JOIN courses c ON ci.course_id = c.id
         LEFT JOIN progress p ON ci.id = p.item_id
@@ -405,13 +423,37 @@ async def update_progress(progress: ProgressUpdate):
     is_completed = 1 if progress.watched_seconds >= (progress.duration * 0.95) else 0
     
     conn.execute("""
-        INSERT INTO progress (item_id, watched_seconds, duration, is_completed)
-        VALUES (?, ?, ?, ?)
+        INSERT INTO progress (item_id, watched_seconds, duration, is_completed, last_watched_at)
+        VALUES (?, ?, ?, ?, ?)
         ON CONFLICT(item_id) DO UPDATE SET
         watched_seconds = MAX(excluded.watched_seconds, watched_seconds),
         duration = excluded.duration,
-        is_completed = MAX(excluded.is_completed, is_completed)
-    """, (progress.video_id, progress.watched_seconds, progress.duration, is_completed))
+        is_completed = MAX(excluded.is_completed, is_completed),
+        last_watched_at = excluded.last_watched_at
+    """, (progress.video_id, progress.watched_seconds, progress.duration, is_completed, time.time()))
+    conn.commit()
+    conn.close()
+    return {"status": "success"}
+
+@app.post("/api/progress/{video_id}/reset")
+async def reset_progress(video_id: int):
+    conn = get_db()
+    video = conn.execute(
+        "SELECT id FROM course_items WHERE id = ? AND item_type = 'video'",
+        (video_id,)
+    ).fetchone()
+    if not video:
+        conn.close()
+        raise HTTPException(status_code=404, detail="Video not found")
+
+    conn.execute(
+        """
+        UPDATE progress
+        SET is_completed = 0, watched_seconds = 0, last_watched_at = 0
+        WHERE item_id = ?
+        """,
+        (video_id,)
+    )
     conn.commit()
     conn.close()
     return {"status": "success"}

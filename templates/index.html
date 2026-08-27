@@ -2,8 +2,8 @@
 {% block title %}Dashboard{% endblock %}
 {% block content %}
     {% if continue_watching %}
-    <section class="section">
-        <h2>Continue Watching</h2>
+    <details class="section continue-watching" open>
+        <summary><h2>Continue Watching</h2><span class="section-toggle" aria-hidden="true">⌄</span></summary>
         <div class="grid">
             {% for vid in continue_watching %}
             <a href="/video/{{ vid.id }}" class="card continue-card">
@@ -19,7 +19,7 @@
             </a>
             {% endfor %}
         </div>
-    </section>
+    </details>
     {% endif %}
 
     <section class="section">
