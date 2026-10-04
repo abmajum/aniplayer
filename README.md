@@ -82,6 +82,23 @@ To stop the service:
 docker compose down
 ```
 
+### Running with single command docker
+
+```bash
+mkdir -p ./courses ./data
+
+docker run -d \
+  --name aniplayer \
+  --restart unless-stopped \
+  -p 8000:8000 \
+  -v "$PWD/courses:/app/courses" \
+  -v "$PWD/data:/app/data" \
+  -e COURSES_DIR=/app/courses \
+  -e DATA_DIR=/app/data \
+  ghcr.io/abmajum/aniplayer:latest
+```
+
+
 ### Published Image
 
 Pushes to the default branch and version tags (`v*`) build and publish the image to GitHub Container Registry:
