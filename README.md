@@ -82,6 +82,16 @@ To stop the service:
 docker compose down
 ```
 
+### Published Image
+
+Pushes to the default branch and version tags (`v*`) build and publish the image to GitHub Container Registry:
+
+```bash
+docker pull ghcr.io/abmajum/aniplayer:latest
+```
+
+The workflow also publishes branch, short commit SHA, and version tags (for example, `1.2.3` and `1.2`). The first published package may need to be made public in the repository's **Packages** settings before it can be pulled without authentication.
+
 ## Running Locally
 
 Python 3.11 or newer is recommended.
