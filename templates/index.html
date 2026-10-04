@@ -7,7 +7,7 @@
         <div class="grid">
             {% for vid in continue_watching %}
             <a href="/video/{{ vid.id }}" class="card continue-card">
-                <div class="card-img" style="background: {% if vid.cover_url %}url('{{ vid.cover_url }}') center/cover no-repeat{% else %}linear-gradient(135deg, #667eea 0%, #764ba2 100%){% endif %}">
+                <div class="card-img" style="background: {% if vid.cover_url %}url('{{ vid.cover_url }}') center/cover no-repeat{% else %}linear-gradient(135deg, #245338 0%, #101810 100%){% endif %}">
                     <div class="progress-bar">
                         <div class="progress" style="width: {{ (vid.watched_seconds / vid.duration * 100) if vid.duration > 0 else 0 }}%"></div>
                     </div>
@@ -27,7 +27,7 @@
         <div class="grid">
             {% for course in courses %}
             <a href="/course/{{ course.id }}" class="card">
-                <div class="card-img" style="background: {% if course.cover_url %}url('{{ course.cover_url }}') center/cover no-repeat{% else %}linear-gradient(135deg, #667eea 0%, #764ba2 100%){% endif %}">
+                <div class="card-img" style="background: {% if course.cover_url %}url('{{ course.cover_url }}') center/cover no-repeat{% else %}linear-gradient(135deg, #245338 0%, #101810 100%){% endif %}">
                     {% if course.percentage == 100 %}
                     <span class="card-badge completed">✓ Completed</span>
                     {% elif course.percentage > 0 %}

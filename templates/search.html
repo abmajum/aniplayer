@@ -8,7 +8,7 @@
     <div class="grid">
         {% for course in courses %}
         <a href="/course/{{ course.id }}" class="card">
-            <div class="card-img" style="background: {% if course.cover_url %}url('{{ course.cover_url }}') center/cover no-repeat{% else %}linear-gradient(135deg, #333 0%, #555 100%){% endif %}"></div>
+            <div class="card-img" style="background: {% if course.cover_url %}url('{{ course.cover_url }}') center/cover no-repeat{% else %}linear-gradient(135deg, #245338 0%, #101810 100%){% endif %}"></div>
             <div class="card-body"><h3>{{ course.name }}</h3></div>
         </a>
         {% endfor %}
