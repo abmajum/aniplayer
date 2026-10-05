@@ -10,6 +10,7 @@ Aniplayer is a self-hosted course video library. It scans a local courses direct
 4. The dashboard shows course completion and a collapsible Continue Watching section. Continue Watching shows the latest unfinished lesson for each course. Opening a lesson resumes it from the last saved position.
 5. Progress is saved while a video plays, when it is paused, and when it ends. A video is marked complete after at least 95% has been watched.
 6. The `Rescan` action refreshes the course list and file tree. Progress is restored by matching the original file paths.
+7. The header Pomodoro timer provides 25-minute focus and 5-minute break sessions, with a sound alarm when either session ends. Timer state is saved in the browser and continues across page navigation. Browsers may require a click or keypress after opening the page before allowing timer audio.
 
 The application is intended for local or trusted-network use. It does not currently provide user accounts or access control.
 

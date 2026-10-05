@@ -75,90 +75,105 @@ def scan_courses():
     conn = get_db()
     cursor = conn.cursor()
 
-    # Save progress keyed by file path before wiping course data
-    saved_progress = {}
-    rows = cursor.execute("""
-        SELECT ci.path, p.watched_seconds, p.duration, p.is_completed, p.last_watched_at
-        FROM progress p
-        JOIN course_items ci ON p.item_id = ci.id
-    """).fetchall()
-    for row in rows:
-        saved_progress[row["path"]] = {
-            "watched_seconds": row["watched_seconds"],
-            "duration": row["duration"],
-            "is_completed": row["is_completed"],
-            "last_watched_at": row["last_watched_at"],
-        }
-
-    cursor.execute("DELETE FROM progress")
-    cursor.execute("DELETE FROM course_items")
-    cursor.execute("DELETE FROM courses")
-    conn.commit()
-
     courses_path = Path(COURSES_DIR)
     if not courses_path.exists():
         courses_path.mkdir(parents=True, exist_ok=True)
 
-    # Sort courses using natural sort
-    for course_dir in sorted(courses_path.iterdir(), key=lambda x: natural_sort_key(x.name)):
-        if course_dir.is_dir():
-            cover_url = None
-            for cover_name in sorted(COVER_NAMES):
-                cover_path = course_dir / cover_name
-                if cover_path.exists():
-                    cover_url = f"/covers/{course_dir.name}/{cover_name}"
-                    break
-            
+    course_dirs = sorted(
+        (path for path in courses_path.iterdir() if path.is_dir()),
+        key=lambda path: natural_sort_key(path.name),
+    )
+    active_course_paths = {str(path) for path in course_dirs}
+
+    for course in cursor.execute("SELECT id, path FROM courses").fetchall():
+        if course["path"] not in active_course_paths:
+            cursor.execute(
+                "DELETE FROM progress WHERE item_id IN "
+                "(SELECT id FROM course_items WHERE course_id = ?)",
+                (course["id"],),
+            )
+            cursor.execute("DELETE FROM course_items WHERE course_id = ?", (course["id"],))
+            cursor.execute("DELETE FROM courses WHERE id = ?", (course["id"],))
+
+    existing_courses = {
+        row["path"]: row["id"]
+        for row in cursor.execute("SELECT id, path FROM courses").fetchall()
+    }
+    existing_items = {
+        row["path"]: row
+        for row in cursor.execute("SELECT id, path FROM course_items").fetchall()
+    }
+    seen_item_paths = set()
+
+    for course_dir in course_dirs:
+        cover_url = None
+        for cover_name in sorted(COVER_NAMES):
+            if (course_dir / cover_name).exists():
+                cover_url = f"/covers/{course_dir.name}/{cover_name}"
+                break
+
+        course_path = str(course_dir)
+        course_id = existing_courses.get(course_path)
+        if course_id is None:
             cursor.execute(
                 "INSERT INTO courses (name, path, cover_url) VALUES (?, ?, ?)",
-                (course_dir.name, str(course_dir), cover_url)
+                (course_dir.name, course_path, cover_url),
             )
             course_id = cursor.lastrowid
+        else:
+            cursor.execute(
+                "UPDATE courses SET name = ?, cover_url = ? WHERE id = ?",
+                (course_dir.name, cover_url, course_id),
+            )
 
-            def scan_directory(dir_path, parent_id=None, base_path=None):
-                if base_path is None:
-                    base_path = dir_path
-                
-                # Natural sort: folders first, then files
-                items = sorted(dir_path.iterdir(), key=lambda x: (not x.is_dir(), natural_sort_key(x.name)))
-                
-                for item in items:
-                    if item.is_dir():
-                        cursor.execute(
-                            "INSERT INTO course_items (course_id, parent_id, name, path, item_type, sort_order) VALUES (?, ?, ?, ?, ?, ?)",
-                            (course_id, parent_id, item.name, str(item), "folder", 0)
-                        )
-                        folder_id = cursor.lastrowid
-                        scan_directory(item, folder_id, base_path)
-                    else:
-                        suffix = item.suffix.lower()
-                        if suffix in VIDEO_EXTENSIONS:
-                            item_type = "video"
-                        else:
-                            # Only index folders and supported video files.
-                            continue
-                        
-                        cursor.execute(
-                            "INSERT INTO course_items (course_id, parent_id, name, path, item_type, filename, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?)",
-                            (course_id, parent_id, item.stem, str(item), item_type, item.name, 1)
-                        )
+        def upsert_item(item, parent_id, item_type, filename=None):
+            item_path = str(item)
+            name = item.stem if item_type == "video" else item.name
+            sort_order = 1 if item_type == "video" else 0
+            existing = existing_items.get(item_path)
 
-            scan_directory(course_dir)
+            if existing:
+                item_id = existing["id"]
+                cursor.execute(
+                    "UPDATE course_items SET course_id = ?, parent_id = ?, name = ?, "
+                    "item_type = ?, filename = ?, sort_order = ? WHERE id = ?",
+                    (course_id, parent_id, name, item_type, filename, sort_order, item_id),
+                )
+            else:
+                cursor.execute(
+                    "INSERT INTO course_items "
+                    "(course_id, parent_id, name, path, item_type, filename, sort_order) "
+                    "VALUES (?, ?, ?, ?, ?, ?, ?)",
+                    (course_id, parent_id, name, item_path, item_type, filename, sort_order),
+                )
+                item_id = cursor.lastrowid
+
+            seen_item_paths.add(item_path)
+            return item_id
+
+        def scan_directory(dir_path, parent_id=None):
+            items = sorted(
+                dir_path.iterdir(),
+                key=lambda path: (not path.is_dir(), natural_sort_key(path.name)),
+            )
+            for item in items:
+                if item.is_dir():
+                    folder_id = upsert_item(item, parent_id, "folder")
+                    scan_directory(item, folder_id)
+                elif item.suffix.lower() in VIDEO_EXTENSIONS:
+                    upsert_item(item, parent_id, "video", item.name)
+
+        scan_directory(course_dir)
+
+    stale_items = [
+        row for path, row in existing_items.items()
+        if path not in seen_item_paths
+    ]
+    for item in stale_items:
+        cursor.execute("DELETE FROM progress WHERE item_id = ?", (item["id"],))
+        cursor.execute("DELETE FROM course_items WHERE id = ?", (item["id"],))
 
     conn.commit()
-
-    # Restore saved progress by matching file paths
-    if saved_progress:
-        items = cursor.execute("SELECT id, path FROM course_items").fetchall()
-        for item in items:
-            prog = saved_progress.get(item["path"])
-            if prog:
-                cursor.execute("""
-                    INSERT INTO progress (item_id, watched_seconds, duration, is_completed, last_watched_at)
-                    VALUES (?, ?, ?, ?, ?)
-                """, (item["id"], prog["watched_seconds"], prog["duration"], prog["is_completed"], prog["last_watched_at"]))
-        conn.commit()
-
     conn.close()
 
 @asynccontextmanager

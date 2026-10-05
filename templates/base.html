@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#121212">
     <title>{% block title %}LMS{% endblock %}</title>
-    <link rel="stylesheet" href="/static/style.css?v=2">
+    <link rel="stylesheet" href="/static/style.css?v=3">
 </head>
 <body>
     <nav class="navbar">
@@ -19,12 +19,32 @@
                 <form action="/rescan" method="post" class="rescan-form">
                     <button type="submit">Rescan</button>
                 </form>
+                <details class="pomodoro-widget">
+                    <summary class="pomodoro-toggle" aria-label="Open Pomodoro timer" title="Pomodoro timer">
+                        <span aria-hidden="true">🍅</span>
+                    </summary>
+                    <section class="pomodoro-panel" aria-label="Pomodoro timer">
+                        <div class="pomodoro-heading">
+                            <h2>Pomodoro</h2>
+                            <span class="pomodoro-status" id="pomodoro-status" aria-live="polite">Ready when you are</span>
+                        </div>
+                        <div class="pomodoro-modes" role="group" aria-label="Timer mode">
+                            <button type="button" class="pomodoro-mode active" data-pomodoro-mode="focus" aria-pressed="true">Focus</button>
+                            <button type="button" class="pomodoro-mode" data-pomodoro-mode="break" aria-pressed="false">Break</button>
+                        </div>
+                        <div class="pomodoro-clock" id="pomodoro-clock" role="timer" aria-label="25 minutes remaining">25:00</div>
+                        <div class="pomodoro-controls">
+                            <button type="button" class="pomodoro-start" id="pomodoro-start">Start focus</button>
+                            <button type="button" class="pomodoro-reset" id="pomodoro-reset">Reset</button>
+                        </div>
+                    </section>
+                </details>
             </div>
         </div>
     </nav>
     <main class="container">
         {% block content %}{% endblock %}
     </main>
-    <script src="/static/app.js"></script>
+    <script src="/static/app.js?v=2"></script>
 </body>
 </html>
