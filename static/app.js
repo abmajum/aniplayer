@@ -208,7 +208,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const updateInterval = 5000; // Update every 5 seconds
 
     if (typeof startSeconds !== 'undefined' && startSeconds > 0) {
-        player.currentTime = startSeconds;
+        player.addEventListener('loadedmetadata', () => {
+            player.currentTime = Math.min(startSeconds, player.duration || startSeconds);
+        }, { once: true });
     }
 
     player.addEventListener('timeupdate', () => {
@@ -227,37 +229,44 @@ document.addEventListener('DOMContentLoaded', () => {
         saveProgress(player.duration, player.duration);
     });
 
+    let keyboardSeekTarget = null;
+    let keyboardSeekTimeout;
     document.addEventListener('keydown', (event) => {
-        // Ignore typing in form fields or when modifier keys are held
         const activeElement = document.activeElement;
-        const isFormField = activeElement && (
-            activeElement.tagName === 'INPUT' ||
-            activeElement.tagName === 'TEXTAREA' ||
-            activeElement.tagName === 'SELECT' ||
-            activeElement.isContentEditable
-        );
-        if (isFormField) return;
-
+        const eventIncludesPlayer = event.composedPath().includes(player);
+        const focusIsOnPageOrPlayer = activeElement === document.body ||
+            activeElement === document.documentElement ||
+            activeElement === player ||
+            eventIncludesPlayer;
+        if (!focusIsOnPageOrPlayer) return;
         if (event.ctrlKey || event.altKey || event.metaKey) return;
 
         const seekSeconds = 5;
         if (event.code === 'Space' || event.code === 'ArrowRight' || event.code === 'ArrowLeft') {
-            // Prevent default actions (scrolling / button activation) and stop other handlers
             event.preventDefault();
-            if (event.stopImmediatePropagation) event.stopImmediatePropagation();
+            event.stopImmediatePropagation();
 
             if (event.code === 'Space') {
                 if (player.paused) player.play(); else player.pause();
                 return;
             }
 
-            if (event.code === 'ArrowRight') {
-                player.currentTime = Math.min(player.duration || Infinity, player.currentTime + seekSeconds);
-            } else if (event.code === 'ArrowLeft') {
-                player.currentTime = Math.max(0, player.currentTime - seekSeconds);
-            }
+            const duration = Number.isFinite(player.duration) && player.duration > 0
+                ? player.duration
+                : Infinity;
+            const currentTime = keyboardSeekTarget ?? player.currentTime;
+            const seekDirection = event.code === 'ArrowRight' ? 1 : -1;
+            keyboardSeekTarget = Math.max(
+                0,
+                Math.min(duration, currentTime + seekDirection * seekSeconds)
+            );
+            player.currentTime = keyboardSeekTarget;
+            window.clearTimeout(keyboardSeekTimeout);
+            keyboardSeekTimeout = window.setTimeout(() => {
+                keyboardSeekTarget = null;
+            }, 300);
         }
-    });
+    }, true);
 
     function saveProgress(watched, duration) {
         if (!duration || isNaN(duration)) return;

@@ -10,15 +10,38 @@
                         <h1>{{ video.name }}</h1>
                         <p class="text-muted">Course: <a href="/course/{{ video.course_id }}">{{ video.course_name }}</a></p>
                     </div>
-                    <button id="expandBtn" class="expand-toggle" title="Expand/Collapse Video">⛶</button>
+                    <button id="expandBtn" class="expand-toggle" type="button" title="Enter theater mode" aria-label="Enter theater mode" aria-pressed="false">▰</button>
                 </div>
 
                 <div id="videoContainer" class="video-container">
                     <video id="player" controls autoplay>
-                        <source src="/stream/{{ video.id }}" type="video/mp4">
                         Your browser does not support the video tag.
                     </video>
                 </div>
+                <p id="streamStatus" class="stream-status" role="status" aria-live="polite">Preparing browser-compatible video…</p>
+                <form id="subtitleImportForm" class="subtitle-import-form">
+                    <label>
+                        Import a subtitle file
+                        <input type="file" name="file" accept=".srt,.vtt" required>
+                    </label>
+                    <label>
+                        Track name
+                        <input type="text" name="label" maxlength="100" placeholder="Uses the filename if blank">
+                    </label>
+                    <label>
+                        Language
+                        <input type="text" name="language" maxlength="35" value="und" placeholder="en or en-US">
+                    </label>
+                    <button class="btn btn-secondary" type="submit">Import subtitle</button>
+                    <span id="subtitleImportStatus" role="status" aria-live="polite"></span>
+                </form>
+                <div id="importedSubtitleList" class="imported-subtitle-list" hidden>
+                    <strong>Imported subtitles</strong>
+                    <ul></ul>
+                </div>
+                <button id="deleteTranscodedBtn" class="btn btn-secondary delete-transcoded-button" type="button" hidden>
+                    Delete generated transcoded video
+                </button>
 
                 <div class="video-controls-bottom">
                     <div class="nav-buttons">
@@ -86,11 +109,245 @@
         const startSeconds = {{ video.watched_seconds }};
         const expandBtn = document.getElementById('expandBtn');
         const videoContainer = document.getElementById('videoContainer');
+        const videoPage = document.querySelector('.video-page-container');
+        const player = document.getElementById('player');
+        const streamStatus = document.getElementById('streamStatus');
+        const subtitleImportForm = document.getElementById('subtitleImportForm');
+        const subtitleImportStatus = document.getElementById('subtitleImportStatus');
+        const importedSubtitleList = document.getElementById('importedSubtitleList');
+        const deleteTranscodedBtn = document.getElementById('deleteTranscodedBtn');
+        let streamPollTimer;
         
         expandBtn.addEventListener('click', function() {
-            videoContainer.classList.toggle('expanded');
-            expandBtn.classList.toggle('active');
+            const theaterMode = videoPage.classList.toggle('theater-mode');
+            videoContainer.classList.toggle('expanded', theaterMode);
+            expandBtn.classList.toggle('active', theaterMode);
+            expandBtn.setAttribute('aria-pressed', String(theaterMode));
+            const label = theaterMode ? 'Exit theater mode' : 'Enter theater mode';
+            expandBtn.title = label;
+            expandBtn.setAttribute('aria-label', label);
         });
+
+        async function prepareStream(retry = false) {
+            window.clearTimeout(streamPollTimer);
+            streamStatus.textContent = retry
+                ? 'Retrying video preparation…'
+                : 'Preparing browser-compatible video…';
+            streamStatus.classList.remove('error');
+
+            try {
+                const response = await fetch(`/api/stream/${videoId}/prepare`, {
+                    method: 'POST'
+                });
+                const result = await response.json();
+                if (!response.ok) throw new Error(result.detail || `Request failed (${response.status})`);
+
+                if (result.state === 'ready') {
+                    loadPreparedMedia(result);
+                    return;
+                }
+
+                streamStatus.textContent = getPreparationMessage(result);
+                streamPollTimer = window.setTimeout(pollStreamStatus, 1000);
+            } catch (error) {
+                showStreamError(error);
+            }
+        }
+
+        async function pollStreamStatus() {
+            try {
+                const response = await fetch(`/api/stream/${videoId}/status`);
+                const result = await response.json();
+                if (!response.ok) throw new Error(result.detail || `Request failed (${response.status})`);
+
+                if (result.state === 'ready') {
+                    loadPreparedMedia(result);
+                } else if (result.state === 'failed') {
+                    throw new Error(result.error || 'FFmpeg could not prepare this video');
+                } else {
+                    streamStatus.textContent = getPreparationMessage(result);
+                    streamPollTimer = window.setTimeout(pollStreamStatus, 1000);
+                }
+            } catch (error) {
+                showStreamError(error);
+            }
+        }
+
+        function getPreparationMessage(result) {
+            if (result.stage === 'subtitles') {
+                return `Extracting subtitles… ${result.subtitle_progress || 0}%`;
+            }
+            return `Preparing browser-compatible video… ${result.progress || 0}%`;
+        }
+
+        function loadPreparedMedia(result) {
+            deleteTranscodedBtn.hidden = !result.cached_transcode;
+            player.querySelectorAll('track').forEach(track => track.remove());
+            result.tracks.forEach(subtitle => {
+                addSubtitleTrack(subtitle);
+            });
+            renderImportedSubtitles(result.tracks);
+
+            player.src = result.url;
+            player.load();
+            if (result.unavailable_subtitles.length) {
+                const names = result.unavailable_subtitles
+                    .map(subtitle => `${subtitle.label}: ${subtitle.reason}`)
+                    .join(', ');
+                streamStatus.textContent = `Some embedded subtitles are unavailable: ${names}`;
+                streamStatus.classList.add('error');
+                streamStatus.hidden = false;
+            } else {
+                streamStatus.hidden = true;
+            }
+        }
+
+        deleteTranscodedBtn.addEventListener('click', async () => {
+            if (!window.confirm(
+                'Delete the generated transcoded video and embedded subtitle cache? The original video and imported subtitles will be kept. Playback will require transcoding again.'
+            )) return;
+
+            deleteTranscodedBtn.disabled = true;
+            try {
+                const response = await fetch(`/api/videos/${videoId}/transcoded`, {
+                    method: 'DELETE'
+                });
+                const result = await response.json();
+                if (!response.ok) throw new Error(result.detail || `Delete failed (${response.status})`);
+
+                player.pause();
+                player.removeAttribute('src');
+                player.load();
+                deleteTranscodedBtn.hidden = true;
+                streamStatus.textContent = 'Generated cache deleted. Reload this page to prepare the video for playback again.';
+                streamStatus.classList.remove('error');
+                streamStatus.hidden = false;
+            } catch (error) {
+                deleteTranscodedBtn.disabled = false;
+                streamStatus.textContent = `Could not delete generated cache: ${error.message}`;
+                streamStatus.classList.add('error');
+                streamStatus.hidden = false;
+            }
+        });
+
+        function addSubtitleTrack(subtitle, show = false) {
+            const track = document.createElement('track');
+            track.kind = 'subtitles';
+            track.label = subtitle.label;
+            track.srclang = subtitle.language;
+            track.src = subtitle.src;
+            track.default = Boolean(subtitle.default);
+            if (subtitle.id) track.dataset.importedSubtitleId = subtitle.id;
+            if (show) {
+                track.addEventListener('load', () => {
+                    Array.from(player.textTracks).forEach(existingTrack => {
+                        if (existingTrack !== track.track && existingTrack.mode === 'showing') {
+                            existingTrack.mode = 'disabled';
+                        }
+                    });
+                    track.track.mode = 'showing';
+                }, { once: true });
+            }
+            player.append(track);
+        }
+
+        function renderImportedSubtitles(tracks) {
+            const importedTracks = tracks.filter(track => track.id);
+            const list = importedSubtitleList.querySelector('ul');
+            list.replaceChildren();
+            importedSubtitleList.hidden = importedTracks.length === 0;
+
+            importedTracks.forEach(subtitle => {
+                const item = document.createElement('li');
+                const name = document.createElement('span');
+                name.textContent = `${subtitle.label} (${subtitle.language})`;
+                const deleteButton = document.createElement('button');
+                deleteButton.type = 'button';
+                deleteButton.className = 'subtitle-delete-button';
+                deleteButton.textContent = 'Delete';
+                deleteButton.setAttribute('aria-label', `Delete imported subtitle ${subtitle.label}`);
+                deleteButton.addEventListener('click', () => deleteImportedSubtitle(subtitle, deleteButton));
+                item.append(name, deleteButton);
+                list.append(item);
+            });
+        }
+
+        async function deleteImportedSubtitle(subtitle, button) {
+            if (!window.confirm(`Delete the imported subtitle "${subtitle.label}"?`)) return;
+            button.disabled = true;
+
+            try {
+                const response = await fetch(
+                    `/api/videos/${videoId}/subtitles/${encodeURIComponent(subtitle.id)}`,
+                    { method: 'DELETE' }
+                );
+                const result = await response.json();
+                if (!response.ok) throw new Error(result.detail || `Delete failed (${response.status})`);
+
+                player.querySelectorAll('track[data-imported-subtitle-id]').forEach(track => {
+                    if (track.dataset.importedSubtitleId === subtitle.id) {
+                        track.track.mode = 'disabled';
+                        track.remove();
+                    }
+                });
+                renderImportedSubtitles(
+                    Array.from(player.querySelectorAll('track')).map(track => ({
+                        id: track.dataset.importedSubtitleId
+                    }))
+                );
+                subtitleImportStatus.textContent = `${subtitle.label} deleted.`;
+            } catch (error) {
+                button.disabled = false;
+                subtitleImportStatus.classList.add('error');
+                subtitleImportStatus.textContent = `Could not delete subtitle: ${error.message}`;
+            }
+        }
+
+        subtitleImportForm.addEventListener('submit', async event => {
+            event.preventDefault();
+            const submitButton = subtitleImportForm.querySelector('button[type="submit"]');
+            submitButton.disabled = true;
+            subtitleImportStatus.textContent = 'Importing subtitle…';
+            subtitleImportStatus.classList.remove('error');
+
+            try {
+                const response = await fetch(`/api/videos/${videoId}/subtitles`, {
+                    method: 'POST',
+                    body: new FormData(subtitleImportForm)
+                });
+                const result = await response.json();
+                if (!response.ok) throw new Error(result.detail || `Import failed (${response.status})`);
+
+                addSubtitleTrack(result, true);
+                const currentTracks = Array.from(player.querySelectorAll('track')).map(track => ({
+                    id: track.dataset.importedSubtitleId,
+                    label: track.label,
+                    language: track.srclang
+                }));
+                renderImportedSubtitles(currentTracks);
+                subtitleImportForm.reset();
+                subtitleImportForm.elements.language.value = 'und';
+                subtitleImportStatus.textContent = `${result.label} imported. Select it from the player's subtitles menu if it is not already showing.`;
+            } catch (error) {
+                subtitleImportStatus.classList.add('error');
+                subtitleImportStatus.textContent = `Subtitle import failed: ${error.message}`;
+            } finally {
+                submitButton.disabled = false;
+            }
+        });
+
+        function showStreamError(error) {
+            streamStatus.classList.add('error');
+            streamStatus.textContent = `Video preparation failed: ${error.message}`;
+            const retryButton = document.createElement('button');
+            retryButton.type = 'button';
+            retryButton.className = 'btn btn-secondary';
+            retryButton.textContent = 'Retry';
+            retryButton.addEventListener('click', () => prepareStream(true), { once: true });
+            streamStatus.append(' ', retryButton);
+        }
+
+        prepareStream();
 
         // Expand/collapse folders in sidebar
         document.querySelectorAll('.folder-toggle').forEach(toggle => {

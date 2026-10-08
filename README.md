@@ -11,8 +11,18 @@ Aniplayer is a self-hosted course video library. It scans a local courses direct
 5. Progress is saved while a video plays, when it is paused, and when it ends. A video is marked complete after at least 95% has been watched.
 6. The `Rescan` action refreshes the course list and file tree. Progress is restored by matching the original file paths.
 7. The header Pomodoro timer provides 25-minute focus and 5-minute break sessions, with a sound alarm when either session ends. Timer state is saved in the browser and continues across page navigation. Browsers may require a click or keypress after opening the page before allowing timer audio.
+8. Video byte ranges are streamed in bounded chunks so large-file requests do not load the entire requested range into memory.
+9. Before playback, FFmpeg prepares formats the browser cannot reliably play as cached MP4 (H.264 video and AAC audio), and extracts supported embedded text subtitles to WebVTT tracks. Compatible MP4 files play without video/audio conversion. The first playback waits for preparation; later playback uses the cached, seekable file. Transcoded files and subtitle tracks are stored under `DATA_DIR/transcoded` and require additional disk space. Image-based subtitles such as PGS/DVD subtitles are reported as unsupported.
 
 The application is intended for local or trusted-network use. It does not currently provide user accounts or access control.
+
+## Video Player Controls
+
+- The **Theater mode** button widens the video and moves course content below it. Use the browser's video controls for fullscreen; theater mode does not replace fullscreen.
+- With the page or video player focused, **Left/Right Arrow** seeks backward/forward by five seconds. **Space** toggles playback. Keyboard shortcuts do not override typing or navigation in other controls.
+- Use the player's **CC/subtitles** control to select an available embedded text subtitle track.
+- Import your own `.srt` or `.vtt` subtitles from the video page. Imported tracks are saved for that video under `DATA_DIR` and remain available after reload. Uploads are limited to 10 MB. Delete imported tracks from the list below the upload form.
+- When a generated transcoded video exists, use **Delete generated transcoded video** to remove its video and embedded-subtitle cache files. The original video and imported subtitles are kept; the next playback will prepare the generated video again.
 
 ## Course Requirements
 
