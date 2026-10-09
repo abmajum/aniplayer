@@ -26,19 +26,28 @@
         <h2>🎬 All Medias</h2>
         <div class="grid">
             {% for course in courses %}
-            <a href="/course/{{ course.id }}" class="card">
-                <div class="card-img" style="background: {% if course.cover_url %}url('{{ course.cover_url }}') center/cover no-repeat{% else %}linear-gradient(135deg, #245338 0%, #101810 100%){% endif %}">
-                    {% if course.percentage == 100 %}
-                    <span class="card-badge completed">✓ Completed</span>
-                    {% elif course.percentage > 0 %}
-                    <span class="card-badge">{{ course.percentage }}%</span>
-                    {% endif %}
-                </div>
-                <div class="card-body">
-                    <h3>{{ course.name }}</h3>
-                    <p>{{ course.completed }} / {{ course.total }} Lessons</p>
-                </div>
-            </a>
+            <div class="card course-card">
+                <a href="/course/{{ course.id }}" class="course-card-link">
+                    <div class="card-img" style="background: {% if course.cover_url %}url('{{ course.cover_url }}') center/cover no-repeat{% else %}linear-gradient(135deg, #245338 0%, #101810 100%){% endif %}">
+                        {% if course.percentage == 100 %}
+                        <span class="card-badge completed">✓ Completed</span>
+                        {% elif course.percentage > 0 %}
+                        <span class="card-badge">{{ course.percentage }}%</span>
+                        {% endif %}
+                    </div>
+                    <div class="card-body">
+                        <h3>{{ course.name }}</h3>
+                        <p>{{ course.completed }} / {{ course.total }} Lessons</p>
+                    </div>
+                </a>
+                <button
+                    class="course-delete-button"
+                    type="button"
+                    data-course-id="{{ course.id }}"
+                    data-course-name="{{ course.name }}"
+                    aria-label="Delete course {{ course.name }}"
+                >Delete course</button>
+            </div>
             {% endfor %}
         </div>
     </section>

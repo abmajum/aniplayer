@@ -3,6 +3,7 @@ import hashlib
 import json
 import logging
 import os
+import shutil
 import sqlite3
 import mimetypes
 import re
@@ -377,6 +378,29 @@ def load_media_manifest(output_path):
     except (OSError, json.JSONDecodeError):
         logger.warning("Ignoring invalid media manifest %s", manifest_path)
         return None
+
+
+def remove_transcoded_cache(output_path, cache_key):
+    if not output_path.parent.exists():
+        return
+    for cached_file in output_path.parent.iterdir():
+        if cached_file.is_file() and (
+            cached_file.name == output_path.name
+            or cached_file.name.startswith(f"{cache_key}.")
+        ):
+            cached_file.unlink()
+
+
+def get_course_directory(course_path):
+    courses_root = Path(COURSES_DIR).resolve()
+    course_directory = Path(course_path)
+    if course_directory.is_symlink():
+        raise HTTPException(status_code=400, detail="Refusing to delete a linked course directory")
+
+    resolved_directory = course_directory.resolve()
+    if resolved_directory.parent != courses_root or resolved_directory == courses_root:
+        raise HTTPException(status_code=400, detail="Course directory is outside the configured courses folder")
+    return resolved_directory
 
 
 def init_db():
@@ -1014,6 +1038,102 @@ async def course_detail(request: Request, course_id: int):
         "completed_videos": completed_videos,
         "completion_percentage": completion_percentage
     })
+
+
+@app.delete("/api/courses/{course_id}")
+async def delete_course(course_id: int):
+    conn = get_db()
+    course = conn.execute(
+        "SELECT id, path FROM courses WHERE id = ?",
+        (course_id,),
+    ).fetchone()
+    if not course:
+        conn.close()
+        raise HTTPException(status_code=404, detail="Course not found")
+
+    items = conn.execute(
+        "SELECT id, path, item_type FROM course_items WHERE course_id = ?",
+        (course_id,),
+    ).fetchall()
+    item_ids = [item["id"] for item in items]
+    videos = [item for item in items if item["item_type"] == "video"]
+    imported_subtitles = []
+    if item_ids:
+        placeholders = ",".join("?" for _ in item_ids)
+        imported_subtitles = conn.execute(
+            f"SELECT path FROM external_subtitles WHERE item_id IN ({placeholders})",
+            item_ids,
+        ).fetchall()
+    conn.close()
+
+    course_directory = get_course_directory(course["path"])
+    cache_entries = []
+    for video in videos:
+        video_path = Path(video["path"])
+        if video_path.is_file():
+            output_path, cache_key = get_transcoded_path(video_path)
+            cache_entries.append((output_path, cache_key))
+
+    for _, cache_key in cache_entries:
+        job = transcode_jobs.get(cache_key)
+        if job is not None and not job.done():
+            job.cancel()
+            try:
+                await job
+            except asyncio.CancelledError:
+                pass
+
+    try:
+        for output_path, cache_key in cache_entries:
+            remove_transcoded_cache(output_path, cache_key)
+
+        for video in videos:
+            subtitle_dir = (Path(DATA_DIR) / "subtitles" / str(video["id"])).resolve()
+            for subtitle in imported_subtitles:
+                subtitle_path = Path(subtitle["path"])
+                if subtitle_path.resolve().parent == subtitle_dir:
+                    subtitle_path.unlink(missing_ok=True)
+
+        if course_directory.exists():
+            shutil.rmtree(course_directory)
+    except OSError as error:
+        logger.exception("Could not completely delete course %s", course_id)
+        raise HTTPException(
+            status_code=500,
+            detail="Could not completely delete the course files and generated media",
+        ) from error
+
+    conn = get_db()
+    try:
+        if item_ids:
+            placeholders = ",".join("?" for _ in item_ids)
+            conn.execute(
+                f"DELETE FROM progress WHERE item_id IN ({placeholders})",
+                item_ids,
+            )
+            conn.execute(
+                f"DELETE FROM external_subtitles WHERE item_id IN ({placeholders})",
+                item_ids,
+            )
+        conn.execute("DELETE FROM course_items WHERE course_id = ?", (course_id,))
+        conn.execute("DELETE FROM courses WHERE id = ?", (course_id,))
+        conn.commit()
+    except sqlite3.Error as error:
+        conn.rollback()
+        logger.exception("Could not remove course %s from the database", course_id)
+        raise HTTPException(
+            status_code=500,
+            detail="Course files were removed, but its database records could not be deleted",
+        ) from error
+    finally:
+        conn.close()
+
+    for _, cache_key in cache_entries:
+        transcode_jobs.pop(cache_key, None)
+        transcode_status.pop(cache_key, None)
+
+    return {"deleted": True}
+
 
 @app.get("/video/{item_id}", response_class=HTMLResponse)
 async def video_player(request: Request, item_id: int):

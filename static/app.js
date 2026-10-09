@@ -201,6 +201,31 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
+    document.querySelectorAll('.course-delete-button').forEach(button => {
+        button.addEventListener('click', async () => {
+            const courseName = button.dataset.courseName;
+            if (!window.confirm(
+                `Permanently delete "${courseName}", including its original course folder, progress, transcoded cache, and imported subtitles?`
+            )) return;
+
+            button.disabled = true;
+            button.textContent = 'Deleting…';
+            try {
+                const response = await fetch(`/api/courses/${button.dataset.courseId}`, {
+                    method: 'DELETE'
+                });
+                const result = await response.json();
+                if (!response.ok) throw new Error(result.detail || `Delete failed (${response.status})`);
+                button.closest('.course-card').remove();
+            } catch (error) {
+                button.disabled = false;
+                button.textContent = 'Delete course';
+                console.error('Failed to delete course', error);
+                window.alert(`Could not delete "${courseName}": ${error.message}`);
+            }
+        });
+    });
+
     const player = document.getElementById('player');
     if (!player) return;
 

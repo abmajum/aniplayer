@@ -23,6 +23,7 @@ The application is intended for local or trusted-network use. It does not curren
 - Use the player's **CC/subtitles** control to select an available embedded text subtitle track.
 - Import your own `.srt` or `.vtt` subtitles from the video page. Imported tracks are saved for that video under `DATA_DIR` and remain available after reload. Uploads are limited to 10 MB. Delete imported tracks from the list below the upload form.
 - When a generated transcoded video exists, use **Delete generated transcoded video** to remove its video and embedded-subtitle cache files. The original video and imported subtitles are kept; the next playback will prepare the generated video again.
+- Delete a course from the dashboard with **Delete course**. After confirmation, the course's original folder, database entries and watch progress, transcoded files, and imported subtitles are permanently removed.
 
 ## Course Requirements
 
