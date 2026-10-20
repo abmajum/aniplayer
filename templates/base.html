@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#121212">
     <title>{% block title %}LMS{% endblock %}</title>
-    <link rel="stylesheet" href="/static/style.css?v=9">
+    <link rel="stylesheet" href="/static/style.css?v=14">
 </head>
 <body>
     <nav class="navbar">
@@ -21,7 +21,11 @@
                 </form>
                 <details class="pomodoro-widget">
                     <summary class="pomodoro-toggle" aria-label="Open Pomodoro timer" title="Pomodoro timer">
-                        <span aria-hidden="true">🍅</span>
+                        <svg class="pomodoro-progress-ring" viewBox="0 0 44 44" aria-hidden="true">
+                            <circle class="pomodoro-progress-track" cx="22" cy="22" r="19"></circle>
+                            <circle class="pomodoro-progress" id="pomodoro-progress" cx="22" cy="22" r="19"></circle>
+                        </svg>
+                        <span class="pomodoro-icon" aria-hidden="true">🍅</span>
                     </summary>
                     <section class="pomodoro-panel" aria-label="Pomodoro timer">
                         <div class="pomodoro-heading">
@@ -45,6 +49,6 @@
     <main class="container">
         {% block content %}{% endblock %}
     </main>
-    <script src="/static/app.js?v=7"></script>
+    <script src="/static/app.js?v=8"></script>
 </body>
 </html>

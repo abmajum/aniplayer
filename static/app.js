@@ -7,6 +7,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const startButton = document.getElementById('pomodoro-start');
         const resetButton = document.getElementById('pomodoro-reset');
         const status = document.getElementById('pomodoro-status');
+        const progressRing = document.getElementById('pomodoro-progress');
+        const pomodoroToggle = document.querySelector('.pomodoro-toggle');
+        const progressCircumference = 2 * Math.PI * 19;
         let storedState;
 
         try {
@@ -95,6 +98,13 @@ document.addEventListener('DOMContentLoaded', () => {
             const modeName = state.mode === 'focus' ? 'Focus' : 'Break';
             pomodoroClock.textContent = time;
             pomodoroClock.setAttribute('aria-label', `${minutes} minutes and ${remainder} seconds remaining`);
+            const progress = Math.max(0, Math.min(1, state.remainingMs / durations[state.mode]));
+            progressRing.style.strokeDashoffset = String(progressCircumference * (1 - progress));
+            pomodoroToggle.dataset.mode = state.mode;
+            pomodoroToggle.setAttribute(
+                'aria-label',
+                `${modeName} timer ${state.running ? 'in progress' : 'ready'}: ${time} remaining`
+            );
             modeButtons.forEach(button => {
                 const selected = button.dataset.pomodoroMode === state.mode;
                 button.classList.toggle('active', selected);
