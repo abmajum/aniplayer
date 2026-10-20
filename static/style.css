@@ -101,10 +101,13 @@ a:hover {
     gap: 0.5rem;
     flex: 1;
     max-width: 500px;
+    min-width: 0;
 }
 
 .search-form input {
     flex: 1;
+    min-width: 0;
+    width: 100%;
     padding: 0.7rem 1.1rem;
     background-color: #242424;
     border: 1px solid transparent;
@@ -165,6 +168,8 @@ a:hover {
 }
 
 .pomodoro-toggle {
+    --pomodoro-progress-color: var(--accent);
+    position: relative;
     width: 44px;
     height: 44px;
     display: flex;
@@ -177,6 +182,45 @@ a:hover {
     font-size: 1.25rem;
     list-style: none;
     transition: background-color 0.2s, border-color 0.2s, transform 0.2s;
+}
+
+.pomodoro-toggle[data-mode="break"] {
+    --pomodoro-progress-color: #ff5b5b;
+}
+
+.pomodoro-progress-ring {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+    pointer-events: none;
+}
+
+.pomodoro-progress-ring circle {
+    fill: none;
+    stroke-width: 2.5;
+}
+
+.pomodoro-progress-track {
+    stroke: var(--border);
+}
+
+.pomodoro-progress {
+    stroke: var(--pomodoro-progress-color);
+    stroke-dasharray: 119.38;
+    stroke-dashoffset: 0;
+    stroke-linecap: round;
+    transform: rotate(-90deg);
+    transform-origin: center;
+    filter: drop-shadow(0 0 3px var(--pomodoro-progress-color));
+    transition: stroke-dashoffset 0.25s linear, stroke 0.2s;
+}
+
+.pomodoro-icon {
+    position: relative;
+    z-index: 1;
+    line-height: 1;
 }
 
 .pomodoro-toggle::-webkit-details-marker {
@@ -791,10 +835,43 @@ a:hover {
     align-items: end;
     gap: 0.75rem;
     flex-wrap: wrap;
-    padding: 1rem;
+}
+
+.subtitle-tools {
     border: 1px solid var(--border);
     border-radius: 8px;
     background-color: var(--bg-secondary);
+}
+
+.subtitle-tools-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.85rem 1rem;
+    color: var(--text-primary);
+    font-weight: 600;
+    cursor: pointer;
+    list-style: none;
+}
+
+.subtitle-tools-header::-webkit-details-marker {
+    display: none;
+}
+
+.subtitle-tools[open] > .subtitle-tools-header {
+    border-bottom: 1px solid var(--border);
+}
+
+.subtitle-tools[open] .sidebar-toggle {
+    transform: rotate(180deg);
+}
+
+.subtitle-tools-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    padding: 0.75rem;
 }
 
 .subtitle-import-form label {
@@ -829,6 +906,10 @@ a:hover {
     gap: 0.4rem;
     color: var(--text-secondary);
     font-size: 0.9rem;
+}
+
+.imported-subtitle-list[hidden] {
+    display: none;
 }
 
 .imported-subtitle-list ul {
@@ -905,12 +986,47 @@ a:hover {
     margin-bottom: 1rem;
     padding-bottom: 0.75rem;
     border-bottom: 2px solid var(--border);
+    list-style: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
 }
 
-.sidebar-header h3 {
+.sidebar-header::-webkit-details-marker {
+    display: none;
+}
+
+.sidebar-toggle {
+    color: var(--accent);
+    font-size: 1.25rem;
+    line-height: 1;
+    transition: transform 0.2s;
+}
+
+.course-sidebar[open] .sidebar-toggle {
+    transform: rotate(180deg);
+}
+
+.sidebar-heading {
+    min-width: 0;
+}
+
+.course-book-icon {
+    display: none;
+}
+
+.sidebar-title {
+    display: block;
     margin: 0;
     font-size: 1.1rem;
+    font-weight: 600;
     color: var(--text-primary);
+}
+
+.current-video-sidebar-label {
+    display: none;
 }
 
 .course-tree-sidebar {
@@ -1088,12 +1204,107 @@ a:hover {
 
     .nav-actions {
         width: 100%;
+        flex-wrap: wrap;
+    }
+
+    .nav-actions .search-form {
+        flex: 1 0 100%;
+        max-width: none;
+    }
+
+    .nav-actions .rescan-form {
+        margin-right: auto;
     }
 
     .pomodoro-panel {
         top: calc(100% + 0.5rem);
     }
-    
+
+    .course-sidebar {
+        position: fixed;
+        z-index: 120;
+        top: 50%;
+        left: 0;
+        width: min(88vw, 350px);
+        max-height: calc(100dvh - 140px);
+        padding: 0.75rem;
+        border-left: 0;
+        border-radius: 0 12px 12px 0;
+        transform: translateY(-50%);
+        box-shadow: 0 8px 32px var(--shadow);
+    }
+
+    .video-page-container.theater-mode .course-sidebar {
+        position: fixed;
+        top: 50%;
+        left: 0;
+        right: auto;
+        max-height: calc(100dvh - 140px);
+    }
+
+    .course-sidebar:not([open]) {
+        top: 30%;
+        width: 48px;
+        max-height: none;
+        padding: 0;
+        border-radius: 0 10px 10px 0;
+    }
+
+    .video-page-container.theater-mode .course-sidebar:not([open]) {
+        top: 30%;
+    }
+
+    .course-book-icon {
+        display: flex;
+        width: 28px;
+        height: 28px;
+        flex: 0 0 28px;
+        color: #ff4545;
+    }
+
+    .course-book-icon svg {
+        width: 100%;
+        height: 100%;
+        fill: none;
+        stroke: currentColor;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        stroke-width: 2;
+    }
+
+    .course-sidebar > .sidebar-header {
+        margin: 0;
+        padding: 0.75rem;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .course-sidebar:not([open]) > .sidebar-header {
+        justify-content: center;
+        padding: 0.6rem;
+        border-bottom: 0;
+    }
+
+    .course-sidebar:not([open]) .sidebar-heading,
+    .course-sidebar:not([open]) .sidebar-toggle {
+        display: none;
+    }
+
+    .current-video-sidebar-label {
+        display: block;
+        margin-top: 0.15rem;
+        overflow: hidden;
+        color: var(--text-secondary);
+        font-size: 0.8rem;
+        font-weight: 400;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .course-tree-sidebar {
+        max-height: calc(100dvh - 220px);
+        overflow-y: auto;
+    }
+
     .course-header {
         flex-direction: column;
     }

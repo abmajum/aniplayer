@@ -19,26 +19,34 @@
                     </video>
                 </div>
                 <p id="streamStatus" class="stream-status" role="status" aria-live="polite">Preparing browser-compatible video…</p>
-                <form id="subtitleImportForm" class="subtitle-import-form">
-                    <label>
-                        Import a subtitle file
-                        <input type="file" name="file" accept=".srt,.vtt" required>
-                    </label>
-                    <label>
-                        Track name
-                        <input type="text" name="label" maxlength="100" placeholder="Uses the filename if blank">
-                    </label>
-                    <label>
-                        Language
-                        <input type="text" name="language" maxlength="35" value="und" placeholder="en or en-US">
-                    </label>
-                    <button class="btn btn-secondary" type="submit">Import subtitle</button>
-                    <span id="subtitleImportStatus" role="status" aria-live="polite"></span>
-                </form>
-                <div id="importedSubtitleList" class="imported-subtitle-list" hidden>
-                    <strong>Imported subtitles</strong>
-                    <ul></ul>
-                </div>
+                <details class="subtitle-tools">
+                    <summary class="subtitle-tools-header">
+                        <span>Import subtitle</span>
+                        <span class="sidebar-toggle" aria-hidden="true">⌄</span>
+                    </summary>
+                    <div class="subtitle-tools-content">
+                        <form id="subtitleImportForm" class="subtitle-import-form">
+                            <label>
+                                Import a subtitle file
+                                <input type="file" name="file" accept=".srt,.vtt" required>
+                            </label>
+                            <label>
+                                Track name
+                                <input type="text" name="label" maxlength="100" placeholder="Uses the filename if blank">
+                            </label>
+                            <label>
+                                Language
+                                <input type="text" name="language" maxlength="35" value="und" placeholder="en or en-US">
+                            </label>
+                            <button class="btn btn-secondary" type="submit">Import subtitle</button>
+                            <span id="subtitleImportStatus" role="status" aria-live="polite"></span>
+                        </form>
+                        <div id="importedSubtitleList" class="imported-subtitle-list" hidden>
+                            <strong>Imported subtitles</strong>
+                            <ul></ul>
+                        </div>
+                    </div>
+                </details>
                 <button id="deleteTranscodedBtn" class="btn btn-secondary delete-transcoded-button" type="button" hidden>
                     Delete generated transcoded video
                 </button>
@@ -57,10 +65,21 @@
         </div>
 
         <!-- Right side: Course Content Sidebar -->
-        <div class="course-sidebar">
-            <div class="sidebar-header">
-                <h3>Course Content</h3>
-            </div>
+        <details class="course-sidebar" open>
+            <summary class="sidebar-header" aria-label="Toggle course content for {{ video.name }}">
+                <span class="course-book-icon" aria-hidden="true">
+                    <svg viewBox="0 0 32 32" focusable="false">
+                        <path d="M5 6.5h6a4 4 0 0 1 4 4v15a4 4 0 0 0-4-3.5H5z"></path>
+                        <path d="M27 6.5h-6a4 4 0 0 0-4 4v15a4 4 0 0 1 4-3.5h6z"></path>
+                        <path d="M16 10v16"></path>
+                    </svg>
+                </span>
+                <span class="sidebar-heading">
+                    <span class="sidebar-title">Course Content</span>
+                    <span class="current-video-sidebar-label">{{ video.name }}</span>
+                </span>
+                <span class="sidebar-toggle" aria-hidden="true">⌄</span>
+            </summary>
             <div class="course-tree-sidebar">
                 {% macro render_items(items, current_id) %}
                     {% for item in items %}
@@ -101,7 +120,7 @@
                 
                 {{ render_items(course_items, video.id) }}
             </div>
-        </div>
+        </details>
     </div>
 
     <script>
@@ -356,10 +375,30 @@
             });
         });
 
-        // Scroll the currently active lesson into view in the sidebar
-        const activeSidebarItem = document.querySelector('.tree-file-sidebar.active');
-        if (activeSidebarItem) {
-            activeSidebarItem.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+        const courseSidebar = document.querySelector('.course-sidebar');
+        if (window.matchMedia('(max-width: 768px)').matches) {
+            courseSidebar.open = false;
         }
+
+        const activeSidebarItem = document.querySelector('.tree-file-sidebar.active');
+        const courseTree = document.querySelector('.course-tree-sidebar');
+
+        function revealActiveLesson() {
+            if (!activeSidebarItem) return;
+            const mobileSidebar = window.matchMedia('(max-width: 768px)').matches;
+            const scrollContainer = mobileSidebar ? courseTree : courseSidebar;
+            scrollContainer.scrollTop += activeSidebarItem.getBoundingClientRect().top
+                - scrollContainer.getBoundingClientRect().top;
+        }
+
+        if (activeSidebarItem && window.matchMedia('(min-width: 1201px)').matches) {
+            revealActiveLesson();
+        }
+
+        courseSidebar.addEventListener('toggle', () => {
+            if (courseSidebar.open && window.matchMedia('(max-width: 768px)').matches) {
+                revealActiveLesson();
+            }
+        });
     </script>
 {% endblock %}
