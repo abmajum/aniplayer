@@ -393,6 +393,44 @@ a:hover {
     transition: width 0.3s ease;
 }
 
+.course-resume {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin: 1.5rem 0;
+    padding: 1rem 1.25rem;
+    border: 1px solid var(--accent);
+    border-radius: 10px;
+    background: rgba(30, 215, 96, 0.08);
+    color: var(--text-primary);
+    text-decoration: none;
+}
+
+.course-resume-details {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    min-width: 0;
+}
+
+.course-resume-label,
+.course-resume-progress {
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+}
+
+.course-resume-action {
+    color: var(--accent);
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.course-resume:hover .course-resume-action,
+.course-resume:focus-visible .course-resume-action {
+    text-decoration: underline;
+}
+
 /* Course Content */
 .course-content h2 {
     margin-bottom: 1rem;
@@ -461,6 +499,20 @@ a:hover {
     border-left: 3px solid var(--success);
 }
 
+.tree-file.video.last-played {
+    box-shadow: inset 3px 0 0 var(--accent);
+}
+
+.last-played-badge {
+    padding: 0.2rem 0.45rem;
+    border-radius: 999px;
+    background: rgba(30, 215, 96, 0.14);
+    color: var(--accent);
+    font-size: 0.7rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
 .file-icon {
     width: 32px;
     height: 32px;
@@ -505,7 +557,8 @@ a:hover {
     text-transform: uppercase;
 }
 
-.reset-completion {
+.reset-completion,
+.mark-finished {
     width: 30px;
     height: 30px;
     border: 1px solid var(--border);
@@ -518,8 +571,16 @@ a:hover {
     flex-shrink: 0;
 }
 
+.mark-finished {
+    width: auto;
+    padding: 0 0.45rem;
+    font-size: 0.75rem;
+}
+
 .reset-completion:hover,
-.reset-completion:focus-visible {
+.reset-completion:focus-visible,
+.mark-finished:hover,
+.mark-finished:focus-visible {
     border-color: var(--accent);
     color: var(--accent);
     outline: none;

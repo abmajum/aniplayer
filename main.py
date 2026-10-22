@@ -991,6 +991,16 @@ async def course_detail(request: Request, course_id: int):
     course = conn.execute("SELECT * FROM courses WHERE id = ?", (course_id,)).fetchone()
     if not course:
         raise HTTPException(status_code=404)
+
+    last_played = conn.execute("""
+        SELECT ci.id, ci.name, p.watched_seconds, p.duration, p.is_completed
+        FROM course_items ci
+        JOIN progress p ON p.item_id = ci.id
+        WHERE ci.course_id = ? AND ci.item_type = 'video' AND p.watched_seconds > 0
+        ORDER BY COALESCE(NULLIF(p.last_watched_at, 0), p.watched_seconds) DESC,
+                 ci.id DESC
+        LIMIT 1
+    """, (course_id,)).fetchone()
     
     total_videos = conn.execute(
         "SELECT COUNT(*) FROM course_items WHERE course_id = ? AND item_type = 'video'", 
@@ -1033,6 +1043,7 @@ async def course_detail(request: Request, course_id: int):
     return templates.TemplateResponse("course.html", {
         "request": request, 
         "course": course, 
+        "last_played_video": last_played,
         "items": items,
         "total_videos": total_videos,
         "completed_videos": completed_videos,
@@ -1232,6 +1243,27 @@ async def update_progress(progress: ProgressUpdate):
         is_completed = MAX(excluded.is_completed, is_completed),
         last_watched_at = excluded.last_watched_at
     """, (progress.video_id, progress.watched_seconds, progress.duration, is_completed, time.time()))
+    conn.commit()
+    conn.close()
+    return {"status": "success"}
+
+@app.post("/api/progress/{video_id}/finish")
+async def finish_progress(video_id: int):
+    conn = get_db()
+    video = conn.execute(
+        "SELECT id FROM course_items WHERE id = ? AND item_type = 'video'",
+        (video_id,)
+    ).fetchone()
+    if not video:
+        conn.close()
+        raise HTTPException(status_code=404, detail="Video not found")
+
+    conn.execute("""
+        INSERT INTO progress (item_id, is_completed)
+        VALUES (?, 1)
+        ON CONFLICT(item_id) DO UPDATE SET
+        is_completed = 1
+    """, (video_id,))
     conn.commit()
     conn.close()
     return {"status": "success"}

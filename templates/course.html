@@ -18,10 +18,25 @@
         </div>
     </div>
 
+    {% if last_played_video %}
+    <a href="/video/{{ last_played_video.id }}" class="course-resume">
+        <span class="course-resume-details">
+            <span class="course-resume-label">Continue where you left off</span>
+            <strong>{{ last_played_video.name }}</strong>
+            {% if last_played_video.duration > 0 %}
+            <span class="course-resume-progress">
+                {{ (last_played_video.watched_seconds / last_played_video.duration * 100) | int }}% watched
+            </span>
+            {% endif %}
+        </span>
+        <span class="course-resume-action">Resume video →</span>
+    </a>
+    {% endif %}
+
     <div class="course-content">
         <h2>Course Content</h2>
         <div class="course-tree">
-            {% macro render_items(items, level=0) %}
+            {% macro render_items(items, level=0, last_played_id=None) %}
                 {% for item in items %}
                     <div class="tree-item" style="margin-left: {{ level * 20 }}px">
                         {% if item.item_type == 'folder' %}
@@ -31,18 +46,21 @@
                             </div>
                             {% if item.children %}
                                 <div class="tree-children">
-                                    {{ render_items(item.children, level + 1) }}
+                                    {{ render_items(item.children, level + 1, last_played_id) }}
                                 </div>
                             {% endif %}
                         {% elif item.item_type == 'video' %}
-                            <a href="/video/{{ item.id }}" class="tree-file video {% if item.is_completed %}completed{% endif %}">
+                            <a href="/video/{{ item.id }}" id="video-{{ item.id }}" class="tree-file video {% if item.is_completed %}completed{% endif %}{% if item.id == last_played_id %} last-played{% endif %}">
                                 <span class="file-icon {% if item.is_completed %}check{% endif %}">
                                     {% if item.is_completed %}✓{% else %}▶{% endif %}
                                 </span>
                                 <span class="file-name">{{ item.name }}</span>
+                                {% if item.id == last_played_id %}<span class="last-played-badge">Last played</span>{% endif %}
                                 <span class="file-type">Video</span>
                                 {% if item.is_completed %}
                                 <button type="button" class="reset-completion" data-video-id="{{ item.id }}" title="Reset completion for {{ item.name }}" aria-label="Reset completion for {{ item.name }}">↺</button>
+                                {% else %}
+                                <button type="button" class="mark-finished" data-video-id="{{ item.id }}" title="Mark finished for {{ item.name }}" aria-label="Mark finished for {{ item.name }}">Finish</button>
                                 {% endif %}
                             </a>
                         {% elif item.item_type == 'pdf' %}
@@ -68,7 +86,7 @@
                 {% endfor %}
             {% endmacro %}
             
-            {{ render_items(items) }}
+            {{ render_items(items, last_played_id=last_played_video.id if last_played_video else none) }}
         </div>
     </div>
 {% endblock %}

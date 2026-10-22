@@ -1,6 +1,7 @@
 # Ignore runtime volume directories and local metadata
 courses/
 data/
+android/
 
 # Python artifacts
 __pycache__/

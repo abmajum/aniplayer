@@ -211,6 +211,25 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
+    document.querySelectorAll('.mark-finished').forEach(button => {
+        button.addEventListener('click', async (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            button.disabled = true;
+
+            try {
+                const response = await fetch(`/api/progress/${button.dataset.videoId}/finish`, {
+                    method: 'POST'
+                });
+                if (!response.ok) throw new Error(`Mark finished failed (${response.status})`);
+                window.location.reload();
+            } catch (error) {
+                button.disabled = false;
+                console.error('Failed to mark video finished', error);
+            }
+        });
+    });
+
     document.querySelectorAll('.course-delete-button').forEach(button => {
         button.addEventListener('click', async () => {
             const courseName = button.dataset.courseName;
