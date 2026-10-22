@@ -142,6 +142,7 @@ COURSES_DIR=/path/to/courses DATA_DIR=/path/to/data uvicorn main:app --reload
 
 ```text
 aniplayer/
+├── android/                # Native Android app (Kotlin, Compose, Media3, SQLite)
 ├── main.py                 # FastAPI app, scanner, database, streaming, and API routes
 ├── requirements.txt        # Python dependencies
 ├── Dockerfile              # Container image definition
@@ -155,6 +156,8 @@ aniplayer/
 ├── templates/              # Jinja2 HTML templates
 └── tests/                  # Automated tests
 ```
+
+The native Android application is a separate app in [`android/`](./android/README.md). It uses a Kotlin backend with a private SQLite database on the phone; it does not embed the web app's FastAPI server or synchronize data with the web database.
 
 ## Useful Routes
 

@@ -97,6 +97,8 @@
                                 {% if item.is_completed %}<span class="completed-badge">✓</span>{% endif %}
                                 {% if item.is_completed %}
                                 <button type="button" class="reset-completion sidebar-reset" data-video-id="{{ item.id }}" title="Reset completion for {{ item.name }}" aria-label="Reset completion for {{ item.name }}">↺</button>
+                                {% else %}
+                                <button type="button" class="mark-finished sidebar-mark-finished" data-video-id="{{ item.id }}" title="Mark finished for {{ item.name }}" aria-label="Mark finished for {{ item.name }}">Finish</button>
                                 {% endif %}
                             </a>
                         {% elif item.item_type == 'pdf' %}
